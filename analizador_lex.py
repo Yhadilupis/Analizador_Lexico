@@ -1,148 +1,89 @@
-import re
+import ply.lex as lex
+from ply.lex import LexError
+
+tokens = [
+    'Palabra_reservada_For', 'Palabra_reservada_Funcion', 'Valor_booleano', 'Palabra_reservada_sentencia_if',
+    'Identificador', 'ASIGNACION', 'String', 'Valor_numerico', 'Simbolo_cierre_de_sentencia', 'PARENTESIS_izquierdo',
+    'PARENTESIS_derecho', 'LLAVE_izquierda', 'LLAVE_derecha', 'Operador_comparacion', 'Palabra_reservada_para_retorno',
+    'COMA', 'Corchete_izquierdo', 'Corchete_derecho', 'Simbolo_especial', 'Incremento', 'Decremento', 'NUEVA_LINEA'
+]
+
+#Reglas
+t_ASIGNACION = r'='
+t_Simbolo_cierre_de_sentencia = r'\!'
+t_PARENTESIS_izquierdo = r'\('
+t_PARENTESIS_derecho = r'\)'
+t_LLAVE_izquierda = r'\{'
+t_LLAVE_derecha = r'\}'
+t_Operador_comparacion = r'==|<=|>=|<|>'
+t_COMA = r','
+t_Corchete_izquierdo = r'\['
+t_Corchete_derecho = r'\]'
+t_Simbolo_especial = r'\*'
+t_Incremento = r'\+\+'
+t_Decremento = r'--'
 
 
-class Token:
-    def __init__(self, tipo, valor):
-        self.tipo = tipo
-        self.valor = valor
+def t_Palabra_reservada_For(t):
+    r'F'
+    return t
 
-    def __str__(self):
-        return f"Token: {self.tipo}, lexema: {self.valor}"
+def t_Palabra_reservada_sentencia_if(t):
+    r'¡si'
+    return t
+
+def t_Palabra_reservada_Funcion(t):
+    r'fun'
+    return t
+
+def t_Palabra_reservada_para_retorno(t):
+    r'return'
+    return t
 
 
-class Lexer:
-    def __init__(self, codigo):
-        self.codigo = codigo
-        self.posicion = 0
+def t_Identificador(t):
+    r'[a-z]+'
+    lower_value = t.value.lower()
+    if lower_value == 'F':
+        t.type = 'Palabra_reservada_For'
+    elif lower_value == '¡si':
+        t.type = 'Palabra_reservada_sentencia_if'
+    elif lower_value == 'fun':
+        t.type = 'Palabra_reservada_Funcion'
+    elif lower_value == 'return':
+        t.type = 'Palabra_reservada_para_retorno'
+    elif lower_value == 'true' or lower_value == 'false':
+        t.type = "Valor_booleano"
+    return t
 
-    def obtener_siguiente_token(self):
-        if self.posicion == len(self.codigo):
-            return Token("FIN", None)
 
-        # Ignora los espacios en blanco
-        while (self.posicion < len(self.codigo) and
-               (self.codigo[self.posicion].isspace() or self.codigo[self.posicion] == ':' or self.codigo[self.posicion] == '\n')):
-            self.posicion += 1
 
-        # Coincidir con identificadores
-        if re.match(r'[a-zA-Z¡]', self.codigo[self.posicion]):
-            inicio = self.posicion
-            while (self.posicion < len(self.codigo) and
-                   re.match(r'[a-zA-Z0-9¡]', self.codigo[self.posicion])):
-                self.posicion += 1
-            valor = self.codigo[inicio:self.posicion]
-            # Manejar palabras clave
-            if valor == 'true' or valor == 'false':
-                return Token("VALOR BOOLENO", valor == 'true')
-            elif valor == 'fun':
-                return Token("PALABRA RESERVADA FUNCION", valor)
-            elif valor == 'return':
-                return Token("PALABRA RESERVADA PARA RETORNAR", valor)
-            elif valor == 'F':
-                return Token("PALABRA RESERVADA DE FOR", valor)
-            elif valor == '¡si':
-                return Token("PALABRA RESERVADA SENTENCIA IF", valor)
-            return Token("IDENTIFICADOR", valor)
+def t_Valor_booleano(t):
+    r'true|false'
+    return t
 
-        if self.codigo[self.posicion] == '=':
-            self.posicion += 1
-            return Token("ASIGNACION", '=')
 
-        if re.match(r'\d', self.codigo[self.posicion]):
-            inicio = self.posicion
-            while (self.posicion < len(self.codigo) and
-                   (re.match(r'\d', self.codigo[self.posicion]) or self.codigo[self.posicion] == '.')):
-                self.posicion += 1
-            valor = float(self.codigo[inicio:self.posicion])
-            return Token("VALOR NUMERICO", valor)
+def t_String(t):
+    r'\*[a-z0-9 ]*\*'
+    return t
 
-        # Coincidir con valores booleanos
-        if self.codigo.startswith('true', self.posicion):
-            self.posicion += 4
-            return Token("BOOLEANO", True)
-        elif self.codigo.startswith('false', self.posicion):
-            self.posicion += 5
-            return Token("BOOLEANO", False)
 
-        if self.codigo[self.posicion] == '*':
-            inicio = self.posicion
-            while (self.posicion < len(self.codigo) and
-                   self.codigo[self.posicion] != '*'):
-                self.posicion += 1
-            if self.posicion < len(self.codigo) and self.codigo[self.posicion] == '*':
-                self.posicion += 1
-                valor = self.codigo[inicio + 1:self.posicion - 1]
-                return Token("SIMBOLO_ESPECIAL", '*')
+def t_Valor_numerico(t):
+    r'-?\d+(\.\d+)?'
+    t.value = float(t.value) if '.' in t.value else int(t.value)
+    return t
 
-        if self.codigo[self.posicion] == '[':
-            self.posicion += 1
-            return Token("CORCHETE_IZQUIERDO", '[')
-        elif self.codigo[self.posicion] == ']':
-            self.posicion += 1
-            return Token("CORCHETE_DERECHO", ']')
-        elif self.codigo[self.posicion] == '{':
-            self.posicion += 1
-            return Token("LLAVE_IZQUIERDA", '{')
-        elif self.codigo[self.posicion] == '}':
-            self.posicion += 1
-            return Token("LLAVE_DERECHA", '}')
-        elif self.codigo[self.posicion:self.posicion + 2] == '=>':
-            self.posicion += 2
-            return Token("FLECHA", '=>')
+def t_NUEVA_LINEA(t):
+    r'\n+'
+    t.lexer.lineno += len(t.value)
+    pass
 
-        if self.codigo[self.posicion] == '(':
-            self.posicion += 1
-            return Token("PARENTESIS_IZQUIERDO", '(')
-        elif self.codigo[self.posicion] == ')':
-            self.posicion += 1
-            return Token("PARENTESIS_DERECHO", ')')
-        elif re.match(r'[a-zA-Z]', self.codigo[self.posicion]):
-            inicio = self.posicion
-            while (self.posicion < len(self.codigo) and
-                   re.match(r'[a-zA-Z0-9]', self.codigo[self.posicion])):
-                self.posicion += 1
-            valor = self.codigo[inicio:self.posicion]
-            return Token("L", valor)
-        elif re.match(r'[<>=]=?', self.codigo[self.posicion:self.posicion + 2]):
-            operador = self.codigo[self.posicion:self.posicion + 2]
-            self.posicion += 2
-            return Token("OPERADOR_COMPARACION", operador)
-        elif self.codigo[self.posicion:self.posicion + 1] == ',':
-            self.posicion += 1
-            return Token("SIMBOLO_COMA", ',')
-        elif self.codigo[self.posicion:self.posicion + 1] == '!':
-            self.posicion += 1
-            return Token("SIMBOLO_CIERRE SENTENCIA", '!')
-        elif self.codigo[self.posicion:self.posicion + 2] == '++':
-            self.posicion += 2
-            return Token("INCREMENTO", '++')
-        elif self.codigo[self.posicion:self.posicion + 2] == '--':
-            self.posicion += 2
-            return Token("DECREMENTO", '--')
+t_ignore = ' \t'
 
-        # Coincidir con la declaración de función y la palabra clave 'return'
-        if self.codigo[self.posicion:self.posicion + 3] == 'fun':
-            self.posicion += 3
-            return Token("PALABRA_RESERVADA_FUNCIONES", 'fun')
-        elif self.codigo[self.posicion:self.posicion + 6] == 'return':
-            self.posicion += 6
-            return Token("PALABRA_CLAVE_RETURN", 'return')
+# Función para manejar errores en el lexer
+def t_error(t):
+    error_message = f"Lexema no reconocido"
+    print(error_message)
+    t.lexer.skip(1)
 
-        if self.codigo[self.posicion:self.posicion + 2] == 'F(':
-            inicio = self.posicion
-            while (self.posicion < len(self.codigo) and
-                   self.codigo[self.posicion] != ')'):
-                self.posicion += 1
-            if self.posicion < len(self.codigo) and self.codigo[self.posicion] == ')':
-                self.posicion += 1
-                valor = self.codigo[inicio:self.posicion]
-                return Token("FUNCION_F", valor)
-
-        if self.posicion < len(self.codigo):
-            lexema_no_reconocido = self.codigo[self.posicion]
-            self.posicion += 1
-            return Token("LEXEMA_NO_RECONOCIDO", lexema_no_reconocido)
-
-        #ignora otros caracteres inesperados
-        self.posicion += 1
-        return self.obtener_siguiente_token()
+lexer = lex.lex()
