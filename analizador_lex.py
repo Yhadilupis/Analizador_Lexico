@@ -82,7 +82,7 @@ t_ignore = ' \t'
 
 # Función para manejar errores en el lexer
 def t_error(t):
-    error_message = f"Lexema no reconocido"
+    error_message = f"Lexema no reconocido: '{t.value[0]}' en la línea {t.lineno}"
     print(error_message)
     t.lexer.skip(1)
 

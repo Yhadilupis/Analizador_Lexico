@@ -4,6 +4,7 @@ from analizador_lex import lexer
 
 def analizar():
     data = text_input.get("1.0", tk.END)
+    print(data)
     lexer.input(data)
     output.delete("1.0", tk.END)
 
@@ -13,7 +14,7 @@ def analizar():
             if not tok:
                 break
             output.insert(tk.END, f"Token: {tok.type}, Lexema: {tok.value}\n")
-    except lex.LexError as e:
+    except LexError as e:
         output.insert(tk.END, f"Error: {e}\n")
 
 root = tk.Tk()
